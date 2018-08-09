@@ -61,7 +61,7 @@ def avg_filter(img,lamb,win):
         idxy_new = idx_range + shifty
         return idxx_new, idxy_new
     mean_kernel = np.zeros([win*win,len(lamb)])
-    img2 = img
+    img2 = np.zeros([img.shape])
     for i in range(img.shape[0]-int(win/2)*2):
         for j in range(img.shape[1]-int(win/2)*2):
             idx1 = i + int(win/2)
@@ -70,10 +70,12 @@ def avg_filter(img,lamb,win):
             count = 0
             for ii in range(len(rx)):
                 for jj in range(len(ry)):
-                    mean_kernel[count,:] = img_all[rx[ii],ry[jj],:]
+                    mean_kernel[count,:] = img[rx[ii],ry[jj],:]
                     count = count + 1
             img2[idx1,idx2,:] = np.mean(mean_kernel,axis=0)
         print(i)
+        #if i == 2600: #Change this if the filtering must stop at a certain
+        #    break
     return img2
 
 folder_path = ''#CHANGE THIS TO THE FOLDER PATH
@@ -100,3 +102,4 @@ for i in range(0,len(files)):
     img2 = avg_filter(img_all,lamb,7)
     fname = files[i][:-4]
     save_obj(img2, fname)
+    save_obj(lamb,'lamb')
