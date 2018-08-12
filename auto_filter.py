@@ -61,7 +61,7 @@ def avg_filter(img,lamb,win):
         idxy_new = idx_range + shifty
         return idxx_new, idxy_new
     mean_kernel = np.zeros([win*win,len(lamb)])
-    img2 = np.zeros([img.shape])
+    img2 = np.zeros(img.shape)
     for i in range(img.shape[0]-int(win/2)*2):
         for j in range(img.shape[1]-int(win/2)*2):
             idx1 = i + int(win/2)
@@ -96,10 +96,15 @@ files = dir_list2
 # save the filtered image into a python pickle object
 
 for i in range(0,len(files)):
+    os.chdir(folder_path+'//'+folder)
     lib, img = load_hyper_image(files[i])
     lamb = np.array(lib['wavelength']).astype(float)
     img_all = img.load()
     img2 = avg_filter(img_all,lamb,7)
     fname = files[i][:-4]
-    save_obj(img2, fname)
+    os.chdir(folder_path+'//'+folder+'//'+'filtered')
+    spectral.envi.save_image(files[i]+'.hdr',img2,ext='')
     save_obj(lamb,'lamb')
+    del img
+    del img2
+    del img_all
