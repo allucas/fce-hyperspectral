@@ -148,13 +148,17 @@ def get_range(x,y,xlims):
 
 # Load the absorbance data and perform a spectral fit
 
-ext = sio.loadmat('C:\\Users\\Alfredo\\Documents\\University\\FCE\\hyperspectral\\sample_data\\extinction_coeffs\\extinction.mat')
-moxy_lamb = ext['Moxy'][:,0]
-moxy_val = ext['Moxy'][:,1]
-mdeoxy_lamb = ext['M'][:,0]
-mdeoxy_val = ext['M'][:,1]
-mmeth_lamb = ext['Mmeth'][:,0]
-mmeth_val = ext['Mmeth'][:,1]
+import pandas as pd
+oxy_fname = 'C:\\Users\\Alfredo\\Documents\\University\\FCE\\hyperspectral\\absorbance\\spectrometer\\oxy.csv'
+deoxy_fname = 'C:\\Users\\Alfredo\\Documents\\University\\FCE\\hyperspectral\\absorbance\\spectrometer\\deoxy.csv'
+moxy = pd.read_csv(oxy_fname)
+mdeoxy = pd.read_csv(deoxy_fname)
+
+moxy_lamb = moxy['Wavelength'].values
+mdeoxy_lamb = mdeoxy['Wavelength'].values
+
+moxy_val = moxy['Absorbance'].values
+mdeoxy_val = mdeoxy['Absorbance'].values
 
 moxy_lamb_abs, moxy_abs = get_range(moxy_lamb,moxy_val,[450,600])
 mdeoxy_lamb_abs, mdeoxy_abs = get_range(mdeoxy_lamb,mdeoxy_val,[450,600])
