@@ -78,7 +78,7 @@ def avg_filter(img,lamb,win):
 
 # Load the images from a given folder
 
-img_folder = 'E:\\Research Data\\hyperspectral\\hypoxia\\H003\\cropped\\filtered'
+img_folder = 'F:\\Research Data\\hyperspectral\\hypoxia\\H003\\cropped\\filtered'
 files = ['BL_c.bil','H30_c.bil','H2_c.bil','H4_c.bil','R30_c.bil','R2_c.bil','R4_c.bil']
 img_list = []
 os.chdir(img_folder)
@@ -95,7 +95,7 @@ num = 576
 denom = 486
 ratio_list = []
 for i in range(len(img_list)):
-    plt.subplot(1,len(img_list),1+i)
+    #plt.subplot(1,len(img_list),1+i)
     img = img_list[i][10:-10,10:-10,:]
     ratio1 = img[:,:,find_band(lamb,num)]/img[:,:,find_band(lamb,denom)]
     #ratio2 = cv2.medianBlur(ratio2,15)
@@ -126,7 +126,7 @@ v_list = []
 img_v_list = []
 for i in range(len(ratio_list)):
     thresh_1 = (1-ratio_list[i][:,:]>0.3)
-    plt.imshow(thresh_1)
+    #plt.imshow(thresh_1)
     t1,v1, img_v = get_avg_bkg(img_list[i],thresh_1)
     img_v_list.append(img_v)
     t_list.append(t1)
@@ -137,7 +137,6 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-%matplotlib inline  
 
 def get_range(x,y,xlims):
     y = y[x>=xlims[0]]
@@ -149,8 +148,8 @@ def get_range(x,y,xlims):
 # Load the absorbance data and perform a spectral fit
 
 import pandas as pd
-oxy_fname = 'C:\\Users\\Alfredo\\Documents\\University\\FCE\\hyperspectral\\absorbance\\spectrometer\\oxy.csv'
-deoxy_fname = 'C:\\Users\\Alfredo\\Documents\\University\\FCE\\hyperspectral\\absorbance\\spectrometer\\deoxy.csv'
+oxy_fname = 'D:\\Documents\\Alfredo_Projects\\Hyperspectral\\git_folder\\extinction_coeffs\\oxy.csv'
+deoxy_fname = 'D:\\Documents\\Alfredo_Projects\\Hyperspectral\\git_folder\\extinction_coeffs\\deoxy.csv'
 moxy = pd.read_csv(oxy_fname)
 mdeoxy = pd.read_csv(deoxy_fname)
 
@@ -186,11 +185,13 @@ def eps(val_abs,lamb,wav):
         eps_val.append(val_abs[find_band(lamb,wav[i])])
     return eps_val
 
-# Create a custom model for fitting the saturation
+#%% Create a custom model for fitting the saturation
 from astropy.modeling import models, fitting
 from astropy.modeling.models import custom_model
+import time
+
 @custom_model
-def spec_fit(lamb, b0=1, b1=1, chb=1, chbo=1):
+def spec_fit(lamb, b0=1, b1=0.005, chb=1, chbo=1):
     epshb = eps(mdeoxy_abs,lamb=mdeoxy_lamb_abs,wav=lamb)
     epshbo = eps(moxy_abs,lamb=moxy_lamb_abs,wav=lamb)
     return b0 + mu_eff(lamb)*b1 + chbo*epshbo + chb*epshb
@@ -204,10 +205,13 @@ for ii in range(len(img_list)):
     sat_img = np.zeros([img_test.shape[0], img_test.shape[1]])
     for i in range(img_test.shape[0]):
         print(i)
+        start_time = time.time()
         for j in range(img_test.shape[1]):
             img_spec = img_test[i,j,:]
-            img_spec = img_spec[find_band(lamb,450):find_band(lamb,600)]
-            lamb_a = lamb[find_band(lamb,450):find_band(lamb,600)]
-            fit_sat = fitter(spec_fit_1, lamb_a, img_spec,maxiter=200, acc=0.0001)
-            sat_img[i,j] = fit_sat.chbo.value/(fit_sat.chb.value+fit_sat.chbo.value)
-            sat_img_list.append(sat_img)
+            if ~(np.isinf(img_spec).all()):
+                img_spec = img_spec[find_band(lamb,450):find_band(lamb,600)]
+                lamb_a = lamb[find_band(lamb,450):find_band(lamb,600)]
+                fit_sat = fitter(spec_fit_1, lamb_a, img_spec,maxiter=200, acc=0.0001)
+                sat_img[i,j] = fit_sat.chbo.value/(fit_sat.chb.value+fit_sat.chbo.value)
+                sat_img_list.append(sat_img)
+        print("--- %s seconds ---" % (time.time() - start_time))
