@@ -78,8 +78,8 @@ def avg_filter(img,lamb,win):
         #    break
     return img2
 
-folder_path = ''#CHANGE THIS TO THE FOLDER PATH
-folder = ''# CHANGE THIS TO THE NAME OF THE FOLDER
+folder_path = 'F:\\Research Data\\hyperspectral\\hypoxia\\H004\\' #CHANGE THIS TO THE FOLDER PATH
+folder = 'cropped'# CHANGE THIS TO THE NAME OF THE FOLDER
 
 # Go to the folder and get the names of all the .bil files in the folder
 os.chdir(folder_path+'//'+folder)

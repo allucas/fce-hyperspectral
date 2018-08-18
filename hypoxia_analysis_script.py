@@ -78,8 +78,9 @@ def avg_filter(img,lamb,win):
 
 # Load the images from a given folder
 
-img_folder = 'F:\\Research Data\\hyperspectral\\hypoxia\\H003\\cropped\\filtered'
-files = ['BL_c.bil','H30_c.bil','H2_c.bil','H4_c.bil','R30_c.bil','R2_c.bil','R4_c.bil']
+img_folder = 'F:\\Research Data\\hyperspectral\\hypoxia\\H004\\cropped\\filtered'
+#files = ['BL_c.bil','H30_c.bil','H2_c.bil','H4_c.bil','R30_c.bil','R2_c.bil','R4_c.bil']
+files = ['BL_1_c.bil','H1_1_c.bil','R4_1_c.bil']
 img_list = []
 os.chdir(img_folder)
 for i in range(len(files)):
@@ -124,9 +125,12 @@ def get_avg_bkg(img, mask):
 t_list = []
 v_list = []
 img_v_list = []
+thresh_list = []
 for i in range(len(ratio_list)):
     thresh_1 = (1-ratio_list[i][:,:]>0.3)
-    #plt.imshow(thresh_1)
+    thresh_list.append(thresh_1)
+    plt.subplot(1,len(img_list),i+1)
+    plt.imshow(thresh_1)
     t1,v1, img_v = get_avg_bkg(img_list[i],thresh_1)
     img_v_list.append(img_v)
     t_list.append(t1)
@@ -200,7 +204,7 @@ spec_fit_1 = spec_fit()
 fitter = fitting.LevMarLSQFitter()
 sat_img_list = []
 for ii in range(len(img_list)):
-    img_test = t_list[ii]/img_v_list[ii]
+    img_test = np.log(t_list[ii]/img_v_list[ii])
     img_test = img_test[7:-7,7:-7]
     sat_img = np.zeros([img_test.shape[0], img_test.shape[1]])
     for i in range(img_test.shape[0]):
@@ -212,6 +216,15 @@ for ii in range(len(img_list)):
                 img_spec = img_spec[find_band(lamb,450):find_band(lamb,600)]
                 lamb_a = lamb[find_band(lamb,450):find_band(lamb,600)]
                 fit_sat = fitter(spec_fit_1, lamb_a, img_spec,maxiter=200, acc=0.0001)
-                sat_img[i,j] = fit_sat.chbo.value/(fit_sat.chb.value+fit_sat.chbo.value)
-                sat_img_list.append(sat_img)
+                sat_val = fit_sat.chbo.value/(fit_sat.chb.value+fit_sat.chbo.value)
+                if sat_val>1 or sat_val<0:
+                    sat_val=0
+                sat_img[i,j] = sat_val
         print("--- %s seconds ---" % (time.time() - start_time))
+    sat_img_list.append(sat_img)
+
+#% Send text to slack when code finishes running
+from slacker import Slacker
+slackClient = Slacker('xoxb-419910545015-419018721605-mdJSoOh18yD0lSzXLAxIHC5b')
+message = 'Analysis done!'
+slackClient.chat.post_message('#hyperspectral',message)
