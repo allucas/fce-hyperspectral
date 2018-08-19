@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
 import pickle
+import cv2
 #%%
 def save_obj(obj, name ):
     input('ARE YOU SURE YOU WANT TO SAVE THIS OBJECT...')
@@ -78,7 +79,7 @@ def avg_filter(img,lamb,win):
 
 # Load the images from a given folder
 
-img_folder = 'F:\\Research Data\\hyperspectral\\hypoxia\\H004\\cropped\\filtered'
+img_folder = 'E:\\Research Data\\hyperspectral\\hypoxia\\H004\\cropped\\filtered'
 #files = ['BL_c.bil','H30_c.bil','H2_c.bil','H4_c.bil','R30_c.bil','R2_c.bil','R4_c.bil']
 files = ['BL_1_c.bil','H1_1_c.bil','R4_1_c.bil']
 img_list = []
@@ -122,12 +123,74 @@ def get_avg_bkg(img, mask):
     v_mean_1 = img1_v.mean(axis=1).mean(axis=0)
     return t_mean_1, v_mean_1, img1_v
 
+def applyGabor(img):    
+    def build_filters():
+        filters_scales = []
+        for lambd in np.arange(5,10,1):
+            filters = []
+            ksize = 16
+            for theta in np.arange(0, np.pi, np.pi / 32):
+                params = {'ksize':(ksize, ksize), 'sigma':1.0, 'theta':theta, 'lambd':lambd,
+                          'gamma':0.02, 'psi':0, 'ktype':cv2.CV_32F}
+                kern = cv2.getGaborKernel(**params)
+                kern /= 1.5*kern.sum()
+                filters.append((kern,params))
+            filters_scales.append(filters)
+            return filters_scales
+
+    def process(img, filters):
+        results = []
+        for kern,params in filters:
+            fimg = cv2.filter2D(img, cv2.CV_32FC3, kern)
+            results.append(fimg)
+        return results
+
+
+    # main
+    g = img
+    filters = build_filters()
+    multip_img = np.ones(g.shape)
+    for i in range(len(filters)):
+        filtered_images = process(g, filters[i])
+        summed_img = np.zeros(filtered_images[0].shape)
+        for i in range(len(filtered_images)):
+            summed_img += np.abs(filtered_images[i]-1)
+        multip_img *= summed_img
+    bin_img = (multip_img[:,:]>17).astype(float)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+    erosion = cv2.erode(bin_img,kernel,iterations = 1)
+    return (erosion).astype('uint8')
+
+# def process(img, filters):
+#     results = []
+#     for kern,params in filters:
+#         fimg = cv2.filter2D(img, cv2.CV_8UC3, kern)
+#         results.append(fimg)
+#     return results
+
+# def applyGabor(img):
+#     filters = []
+#     ksize = 16
+#     for theta in np.arange(0, np.pi, np.pi / 32):
+#         params = {'ksize':(ksize, ksize), 'sigma':1.0, 'theta':theta, 'lambd':15.0,
+#                   'gamma':0.02, 'psi':0, 'ktype':cv2.CV_32F}
+#         kern = cv2.getGaborKernel(**params)
+#         kern /= 1.5*kern.sum()
+#         filters.append((kern,params))
+#     filtered_images = process(img, filters)
+#     summed_img = np.zeros(filtered_images[0].shape)
+#     for i in range(len(filtered_images)):
+#         summed_img += np.abs(filtered_images[i]-1)
+#     summed_img[summed_img>0]=1
+#     return summed_img
+
 t_list = []
 v_list = []
 img_v_list = []
 thresh_list = []
 for i in range(len(ratio_list)):
-    thresh_1 = (1-ratio_list[i][:,:]>0.3)
+    #thresh_1 = (1-ratio_list[i][:,:]>0.3)
+    thresh_1 = applyGabor(ratio_list[i])
     thresh_list.append(thresh_1)
     plt.subplot(1,len(img_list),i+1)
     plt.imshow(thresh_1)
@@ -152,8 +215,10 @@ def get_range(x,y,xlims):
 # Load the absorbance data and perform a spectral fit
 
 import pandas as pd
-oxy_fname = 'D:\\Documents\\Alfredo_Projects\\Hyperspectral\\git_folder\\extinction_coeffs\\oxy.csv'
-deoxy_fname = 'D:\\Documents\\Alfredo_Projects\\Hyperspectral\\git_folder\\extinction_coeffs\\deoxy.csv'
+#oxy_fname = 'D:\\Documents\\Alfredo_Projects\\Hyperspectral\\git_folder\\extinction_coeffs\\oxy.csv'
+oxy_fname = 'C:\\Users\\Alfredo\\Documents\\University\\FCE\\hyperspectral\\git_folder\\extinction_coeffs\\oxy.csv'
+#deoxy_fname = 'D:\\Documents\\Alfredo_Projects\\Hyperspectral\\git_folder\\extinction_coeffs\\deoxy.csv'
+deoxy_fname = 'C:\\Users\\Alfredo\\Documents\\University\\FCE\\hyperspectral\\git_folder\\extinction_coeffs\\deoxy.csv'
 moxy = pd.read_csv(oxy_fname)
 mdeoxy = pd.read_csv(deoxy_fname)
 
@@ -217,8 +282,10 @@ for ii in range(len(img_list)):
                 lamb_a = lamb[find_band(lamb,450):find_band(lamb,600)]
                 fit_sat = fitter(spec_fit_1, lamb_a, img_spec,maxiter=200, acc=0.0001)
                 sat_val = fit_sat.chbo.value/(fit_sat.chb.value+fit_sat.chbo.value)
-                if sat_val>1 or sat_val<0:
-                    sat_val=0
+                if sat_val>1:
+                    sat_val=1
+                elif sat_val<0:
+                    sat_val=0.0001
                 sat_img[i,j] = sat_val
         print("--- %s seconds ---" % (time.time() - start_time))
     sat_img_list.append(sat_img)

@@ -20,25 +20,49 @@ plt.imshow(ratio_list[0],cmap=cm.RdYlBu)
 
 #%%
 import matplotlib as mpl
+import cv2
+import matplotlib.cm as cm
+
 red = find_band(lamb,640)
 green = find_band(lamb,550)
 blue = find_band(lamb,460)
 
-for i in range(len(img_list)):
-    a = spectral.save_rgb(files[i][:-5]+'.png', img_list[i], [red, green, blue])
+rgb_img_list = []
+for i in range(len(sat_img_list)):
+    spectral.save_rgb(files[i][:-5]+'.png', img_list[i], [red, green, blue]) # This line must be commented if the RGB images are already saved
+    rgb_img_list.append(cv2.imread(files[i][:-5]+'.png'))
+
+fig = plt.figure()
+
+#Plot a representative RGB Image
+plt.subplot(2,len(sat_img_list),2)
+plt.imshow(rgb_img_list[i])
+plt.xticks([])
+plt.yticks([])
+plt.axis('off')
 
 cmap=cm.RdYlBu
 cmap.set_under(color='black',alpha=0)
-for i in range(len(img_list)):
-    rgb_img = np.zeros([img_list[i].shape[0],img_list[i].shape[1],3])
-    rgb_img[:,:,0] = img_list[i][:,:,red].reshape([img_list[i].shape[0],img_list[i].shape[1]])*255
-    rgb_img[:,:,1] = img_list[i][:,:,green].reshape([img_list[i].shape[0],img_list[i].shape[1]])*255
-    rgb_img[:,:,2] = img_list[i][:,:,blue].reshape([img_list[i].shape[0],img_list[i].shape[1]])*255
+timepoints = ['Baseline','Hypoxia (1m)','Resucitation (4m)']
+for i in range(len(sat_img_list)):
+    #rgb_img = np.zeros([img_list[i].shape[0],img_list[i].shape[1],3])
+    # rgb_img[:,:,0] = img_list[i][:,:,red].reshape([img_list[i].shape[0],img_list[i].shape[1]])*255
+    # rgb_img[:,:,1] = img_list[i][:,:,green].reshape([img_list[i].shape[0],img_list[i].shape[1]])*255
+    # rgb_img[:,:,2] = img_list[i][:,:,blue].reshape([img_list[i].shape[0],img_list[i].shape[1]])*255
+    rgb_img = rgb_img_list[i][17:-17,17:-17]
     rgb_img = rgb_img.astype('uint8')
-    plt.subplot(2,len(img_list),i+1)
+    plt.subplot(2,len(sat_img_list),i+1+len(sat_img_list))
     norm = mpl.colors.Normalize(vmin=0,vmax=1)
     plt.imshow(rgb_img)
-    plt.imshow(sat_img_list[i],vmin=0.01,vmax=1,cmap=cmap), plt.colorbar()
+    sat_img = sat_img_list[i]
+    #sat_img_blur = cv2.blur(sat_img,(5,5))
+    plt.imshow(sat_img,vmin=0.01,vmax=1,cmap=cmap)
+    plt.title(timepoints[i])
+    plt.xticks([])
+    plt.yticks([])
+    plt.axis('off')
+cax = fig.add_axes([0.35, .1, 0.35, 0.05])
+cbar = plt.colorbar(orientation='horizontal',cax=cax,label='Saturation')
 
 for i in range(len(img_list)):
     plt.subplot(2,len(img_list),i+1+len(img_list))
