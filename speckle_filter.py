@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
 import pickle
+import time
 #%% Define the custom functions to be used
 def save_obj(obj, name ):
     input('ARE YOU SURE YOU WANT TO SAVE THIS OBJECT...')
@@ -120,7 +121,8 @@ img_all = img.load()
 img_all = img_all[0:250,0:500,:]
 ## Apply the GoDec algorithm to the image
 # Initialize the first patch
-step=5
+start_time = time.time()
+step=1
 q = 25
 img_filt = np.zeros(img_all.shape)
 patch = img_all[0:q,0:q,:]
@@ -175,3 +177,5 @@ for i in range(step,img_all.shape[0]-q,step):
         patch_new[0:-step,0:-step] = (patch_new[0:-step,0:-step]+patch_old[step:,step:])/2
         img_filt[0+i:q+i,0+j:q+j,:] = patch_new
         patch_old = patch_new
+
+print("--- %s seconds ---" % (time.time() - start_time))

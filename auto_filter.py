@@ -78,7 +78,7 @@ def avg_filter(img,lamb,win):
         #    break
     return img2
 
-folder_path = 'F:\\Research Data\\hyperspectral\\hypoxia\\H004\\' #CHANGE THIS TO THE FOLDER PATH
+folder_path = 'F:\\Research Data\\hyperspectral\\doxo\\DOX001\\' #CHANGE THIS TO THE FOLDER PATH
 folder = 'cropped'# CHANGE THIS TO THE NAME OF THE FOLDER
 
 # Go to the folder and get the names of all the .bil files in the folder
@@ -100,7 +100,7 @@ for i in range(0,len(files)):
     lib, img = load_hyper_image(files[i])
     lamb = np.array(lib['wavelength']).astype(float)
     img_all = img.load()
-    img2 = avg_filter(img_all,lamb,7)
+    img2 = avg_filter(img_all,lamb,5)
     fname = files[i][:-4]
     os.chdir(folder_path+'//'+folder+'//'+'filtered')
     spectral.envi.save_image(files[i]+'.hdr',img2,ext='')
